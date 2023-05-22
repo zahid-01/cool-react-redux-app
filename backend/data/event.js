@@ -31,7 +31,6 @@ async function get(id) {
   if (!event) {
     throw new NotFoundError("Could not find event for id " + id);
   }
-  console.log(event);
 
   return event;
 }

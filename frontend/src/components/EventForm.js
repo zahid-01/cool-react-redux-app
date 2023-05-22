@@ -1,16 +1,32 @@
-import { Form, useNavigate } from "react-router-dom";
+import {
+  Form,
+  useNavigate,
+  useNavigation,
+  useActionData,
+  redirect,
+} from "react-router-dom";
+import axios from "axios";
 
 import classes from "./EventForm.module.css";
 
 function EventForm({ method, event }) {
   const navigate = useNavigate();
+  const formState = useNavigation().state === "submitting";
+  const actionData = useActionData();
 
   function cancelHandler() {
     navigate("..");
   }
 
   return (
-    <Form method="post" className={classes.form}>
+    <Form method={method} className={classes.form}>
+      {actionData && (
+        <ul>
+          {Object.values(actionData).map((el) => (
+            <li>{el}</li>
+          ))}
+        </ul>
+      )}
       <p>
         <label htmlFor="title">Title</label>
         <input
@@ -55,10 +71,43 @@ function EventForm({ method, event }) {
         <button type="button" onClick={cancelHandler}>
           Cancel
         </button>
-        <button>Save</button>
+        <button disabled={formState}>
+          {formState ? "Submitting" : "Save"}
+        </button>
       </div>
     </Form>
   );
 }
 
 export default EventForm;
+
+export const addEvent = async ({ request, params }) => {
+  const data = await request.formData();
+  const formData = {
+    title: data.get("title"),
+    date: data.get("date"),
+    image: data.get("image"),
+    description: data.get("description"),
+  };
+
+  let url = "http://localhost:8080/events";
+
+  if (request.method === "PATCH") {
+    url = `http://localhost:8080/events/${params.someId}`;
+  }
+
+  let error;
+  await axios({
+    url: url,
+    method: request.method,
+    data: formData,
+  }).catch((e) => {
+    error = e.response.data.errors;
+  });
+
+  if (error) {
+    return error;
+  }
+
+  return redirect("/events");
+};
